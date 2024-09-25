@@ -18,10 +18,16 @@ class AutomataJSON:
             'terminated': {  # Estado de aceptación
             },
             "q4": {
-                **{chr(i): "q4" for i in range(48, 58)},  # Números 0-9
-                **{chr(i): "q4" for i in range(97, 123)},  # Letras a-z
-                **{chr(i): "q4" for i in range(65, 91)},  # Letras A-Z
-                '"': "q5",
+                **{chr(i): "q4.1" for i in range(48, 58)},  # Números 0-9
+                **{chr(i): "q4.1" for i in range(97, 123)},  # Letras a-z
+                **{chr(i): "q4.1" for i in range(65, 91)},  # Letras A-Z
+               
+            },
+            "q4.1":{
+               **{chr(i): "q4.1" for i in range(48, 58)},  # Números 0-9
+                **{chr(i): "q4.1" for i in range(97, 123)},  # Letras a-z
+                **{chr(i): "q4.1" for i in range(65, 91)},  # Letras A-Z
+                '"': "q5", 
             },
             "q5": {
                 ':': "q6",
