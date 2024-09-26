@@ -44,10 +44,11 @@ def upload_file():
 
             # Guardar los errores en el archivo CSV
             automata.reportar_errores_csv(csv_path)
+            jsonProcesado =automata.json_procesado
             flash(f'El archivo {filename} no contiene un JSON válido. Se ha generado un informe de errores.', 'error')
 
        
-            return redirect(url_for('autoMataJson.upload_form', csv_filename=csv_filename))
+            return redirect(url_for('autoMataJson.upload_form', csv_filename=csv_filename,jsonProcesado=jsonProcesado))
 
         flash(f'El archivo {filename} contiene un JSON válido', 'success')
         return redirect(url_for('autoMataJson.upload_form'))
