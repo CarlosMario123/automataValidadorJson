@@ -1,0 +1,13 @@
+{
+    "nombre": "Juan,
+    "edad": 30,
+    "activo": true
+    "direccion": {
+        "calle": "Calle Falsa 123",
+        "ciudad": "Ciudad Ejemplo",
+        "pais": Paislandia
+    },
+    "telefonos": [
+        "23456789",
+        "987654321",
+    ]

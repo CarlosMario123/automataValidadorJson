@@ -1,15 +1,19 @@
 from flask import Blueprint, render_template, request, current_app, flash, redirect, url_for, send_file
 import os
+import zipfile
+from io import BytesIO
 from models.automata_json import AutomataJSON  
 from utils.file_utils import allowed_file
-import time 
+import time
 
 autoMataJson = Blueprint('autoMataJson', __name__, url_prefix="/autoMataJson")
 
 
 @autoMataJson.route('/')
 def upload_form():
-    return render_template("upload.html")
+    # Verificar si se ha generado un archivo ZIP para descarga
+    filename = request.args.get('filename', None)
+    return render_template("upload.html", filename=filename)
 
 
 @autoMataJson.route('/upload', methods=['POST'])
@@ -29,40 +33,52 @@ def upload_file():
         file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
 
-        with open(file_path, 'r', encoding='utf-8') as f:
-            contenido = f.read()
+        # Intentar procesar el archivo
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                contenido = f.read()
 
-        automata = AutomataJSON() 
-        es_json_valido = automata.procesar_json(contenido)
+            automata = AutomataJSON() 
+            json_validos = automata.procesar_json(contenido)  # Obtener JSON válidos
 
-        if not es_json_valido:
-            
+            # Si no se encontraron JSON válidos
+            if not json_validos:
+                flash(f"El archivo {filename} no contiene ninguna cadena JSON válida.", 'error')
+                return redirect(url_for('autoMataJson.upload_form'))
+
+            # Si se encontraron JSON válidos
+            flash(f"El archivo {filename} contiene {len(json_validos)} cadenas JSON válidas.", 'success')
+
+            # Generar un archivo ZIP con los JSON válidos
             nombre_base, _ = os.path.splitext(filename)
-            timestamp = int(time.time())  # Para generar un valor unico
-            csv_filename = f"{nombre_base}_errores_{timestamp}.csv"
-            csv_path = os.path.join(current_app.config['UPLOAD_FOLDER'], csv_filename)
+            timestamp = int(time.time())  # Generar un timestamp único
+            output_filename = f"{nombre_base}_json_validos_{timestamp}.zip"
+            output_path = os.path.join(current_app.config['UPLOAD_FOLDER'], output_filename)
 
-            # Guardar los errores en el archivo CSV
-            automata.reportar_errores_csv(csv_path)
-            jsonProcesado =automata.json_procesado
-            flash(f'El archivo {filename} no contiene un JSON válido. Se ha generado un informe de errores.', 'error')
+            # Crear el archivo ZIP y agregar cada JSON como un archivo separado
+            with zipfile.ZipFile(output_path, 'w') as zipf:
+                for i, json_valido in enumerate(json_validos, start=1):
+                    json_filename = f"{nombre_base}_json_{i}.json"
+                    # Escribir cada JSON en un archivo separado dentro del ZIP
+                    zipf.writestr(json_filename, json_valido)
 
-       
-            return redirect(url_for('autoMataJson.upload_form', csv_filename=csv_filename,jsonProcesado=jsonProcesado))
+            # Redirigir al formulario de subida con el nombre del archivo ZIP para mostrar el botón de descarga
+            return redirect(url_for('autoMataJson.upload_form', filename=output_filename))
 
-        flash(f'El archivo {filename} contiene un JSON válido', 'success')
+        except Exception as e:
+            flash(f"Error procesando el archivo: {str(e)}", 'error')
+            return redirect(url_for('autoMataJson.upload_form'))
+
+    else:
+        flash('Tipo de archivo no permitido. Solo se permiten archivos .txt.', 'error')
         return redirect(url_for('autoMataJson.upload_form'))
-
-    flash('Tipo de archivo no permitido. Solo archivos .txt', 'error')
-    return redirect(url_for('autoMataJson.upload_form'))
 
 
 @autoMataJson.route('/download_report/<filename>')
 def download_report(filename):
-    csv_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-    if os.path.exists(csv_path):
-        return send_file(csv_path, as_attachment=True, download_name=filename, mimetype='text/csv')
+    output_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+    if os.path.exists(output_path):
+        return send_file(output_path, as_attachment=True, download_name=filename, mimetype='application/zip')
     else:
-        flash('No se ha generado ningún informe de errores', 'error')
+        flash('No se ha generado ningún archivo para descargar.', 'error')
         return redirect(url_for('autoMataJson.upload_form'))
-

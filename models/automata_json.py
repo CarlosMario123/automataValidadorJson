@@ -1,179 +1,132 @@
-import csv
-
 class AutomataJSON:
     def __init__(self):
         self.estado_actual = 'q1'
         self.estados_aceptacion = {'terminated'}
-        self.errores = []
         self.json_procesado = ""  
-        self.fila = 1
-        self.columna = 1
+        self.json_validos = []  # Lista para almacenar los JSON válidos
         self.transition = {
             'q1': {
                 " ": "q1", "\t": "q1", "\n": "q1",
-                "{": "q2", 
+                "{": "q2",  # Detecta inicio de JSON
             },
             'q2': {
                 " ": "q2", "\t": "q2", "\n": "q2", 
-                "}": "terminated",  
-                '"': "q4", 
+                "}": "terminated",  # Detecta fin de JSON
+                '"': "q4",  # Procesa claves (inicio de string)
+                "[": "q15",  # Procesa arreglos dentro del JSON
             },
             'terminated': {
                 " ": "terminated", "\t": "terminated", "\n": "terminated"
-            },  
-            "q4": {  # Inicio de cadena para la clave
+            },
+            "q4": { 
                 **{chr(i): "q4.1" for i in range(32, 127)},
                 '"': "q5",  # Fin de la clave
             },
-            "q4.1": {  
-                **{chr(i): "q4.1" for i in range(32, 127)},  # Permitir caracteres visibles ASCII
+            "q4.1": {  # Permitir caracteres visibles ASCII en strings
+                **{chr(i): "q4.1" for i in range(32, 127)},
                 '"': "q5",  # Fin de la clave
             },
-            "q5": {  
-                " ": "q5", "\t": "q5", "\n": "q5",  
+            "q5": {  # Después de una clave
+                " ": "q5", "\t": "q5", "\n": "q5",
                 ":": "q6",
             },
-            "q6": {  
-                " ": "q6", "\t": "q6", "\n": "q6",  
-                **{chr(i): "q7" for i in range(48, 58)},  # Números 0-9
-                "t": "q12",  # Procesar 'true'
-                "f": "q21",  # Procesar 'false'
-                "n": "q25",  # Procesar 'null'
+            "q6": {  # Procesar el valor después de dos puntos
+                " ": "q6", "\t": "q6", "\n": "q6",
+                **{chr(i): "q7" for i in range(48, 58)},  # Numeros 0-9
                 '"': "q10",  # Procesar una cadena como valor
                 "[": "q15",  # Procesar un array como valor
+                "t": "q12",  # Procesar el valor booleano 'true'
+                "f": "q21",  # Procesar el valor booleano 'false'
             },
-            "q7": {  # Procesar número
-                " ": "q7", "\t": "q7", "\n": "q7",  # Ignorar espacios dentro de números
+            "q7": {  # Procesar números
+                " ": "q7", "\t": "q7", "\n": "q7",
                 **{chr(i): "q7" for i in range(48, 58)},  # Números 0-9
-                "}": "terminated",
-                ".": "q8",  # Procesar números decimales
-                ",": "q9",  # Procesar más valores
+                "}": "terminated",  # Fin del objeto JSON
+                "]": "q20",  # Fin del arreglo dentro del JSON
+                ",": "q9",  # Más pares clave-valor
             },
-            "q8": {  # Procesar decimales
-                " ": "q8", "\t": "q8", "\n": "q8",  # Ignorar espacios después del punto decimal
-                **{chr(i): "q8" for i in range(48, 58)},  # Números 0-9
-                "}": "terminated",
-                ",": "q9",  # Procesar más valores
-            },
-            "q9": {  # Procesar después de una coma
-                " ": "q9", "\t": "q9", "\n": "q9",  # Ignorar espacios, tabulaciones y saltos de línea
+            "q9": {  # Después de una coma
+                " ": "q9", "\t": "q9", "\n": "q9",
                 '"': "q4",  # Nueva clave
+                "[": "q15",  # Nuevo array
             },
             "q10": {  # Procesar cadenas dentro de valores
-                **{chr(i): "q10" for i in range(32, 127)},  # Permitir cualquier carácter visible ASCII dentro de cadenas
+                **{chr(i): "q10" for i in range(32, 127)},  # Permitir caracteres visibles ASCII en strings
                 '"': "q11",  # Fin de la cadena
             },
             "q11": {  # Después de una cadena
-                " ": "q11", "\t": "q11", "\n": "q11",  # Ignorar espacios
-                "}": "terminated",
-                ",": "q9",  
+                " ": "q11", "\t": "q11", "\n": "q11",
+                "}": "terminated",  # Fin del objeto JSON
+                ",": "q9",  # Más pares clave-valor
             },
-            "q12": {  # Procesar 't' de 'true'
-                "r": "q13",
+            # Procesar booleano 'true'
+            "q12": {  # 't'
+                "r": "q13",  # 'tr'
             },
-            "q13": {  # Procesar 'r' de 'true'
-                "u": "q14"
+            "q13": {  # 'tr'
+                "u": "q14",  # 'tru'
             },
-            "q14": {  
-                "e": "q7",  
+            "q14": {  # 'tru'
+                "e": "q7",  # 'true'
             },
-            "q21": { 
-                "a": "q22",
+            # Procesar booleano 'false'
+            "q21": {  # 'f'
+                "a": "q22",  # 'fa'
             },
-            "q22": {  # Procesar 'a' de 'false'
-                "l": "q23",
+            "q22": {  # 'fa'
+                "l": "q23",  # 'fal'
             },
-            "q23": {  # Procesar 'l' de 'false'
-                "s": "q24",
+            "q23": {  # 'fal'
+                "s": "q24",  # 'fals'
             },
-            "q24": {  # Procesar 's' de 'false'
-                "e": "q7",  
+            "q24": {  # 'fals'
+                "e": "q7",  # 'false'
             },
-            "q25": {  # Procesar 'n' de 'null'
-                "u": "q26",
-            },
-            "q26": {  # Procesar 'u' de 'null'
-                "l": "q27",
-            },
-            "q27": {  # Procesar 'l' de 'null'
-                "l": "q7", 
-            },
-            "q15": {  # Procesar arrays
-                " ": "q15", "\t": "q15", "\n": "q15",  # Ignorar espacios dentro del array
-                **{chr(i): "q16" for i in range(48, 58)},  # Números 0-9
-                '"': "q18",  # Procesar cadenas dentro del array
-                "t": "q15.t1",  # Procesar 'true' en array
-                "f": "q15.f1",  # Procesar 'false' en array
-                "n": "q15.n1",  
-                ",": "q15", 
-                "]": "q20",  
-            },
-            "q16": {  # Procesar numeros dentro del array
-                " ": "q16", "\t": "q16", "\n": "q16",  # Ignorar espacios dentro del array
-                **{chr(i): "q16" for i in range(48, 58)},  # Números 0-9
-                ".": "q17",  # Números decimales
+            # Manejo de arreglos
+            "q15": {  # Inicio del array
+                " ": "q15", "\t": "q15", "\n": "q15",
+                **{chr(i): "q16" for i in range(48, 58)},  # Números en el array
                 "]": "q20",  # Cierre del array
-                ",": "q15",  
             },
-            "q17": {  # Procesar números decimales dentro del array
-                " ": "q17", "\t": "q17", "\n": "q17",  # Ignorar espacios
-                **{chr(i): "q17" for i in range(48, 58)},  # Números 0-9
+            "q16": {  # Procesar números dentro del array
+                " ": "q16", "\t": "q16", "\n": "q16",
+                **{chr(i): "q16" for i in range(48, 58)},  # Números en el array
                 "]": "q20",  # Cierre del array
                 ",": "q15",  # Más elementos en el array
             },
-            "q18": {  # Procesar cadenas dentro del array
-                **{chr(i): "q18" for i in range(32, 127)},  # Permitir cualquier carácter visible ASCII
-                '"': "q19",  # Fin de la cadena
-            },
-            "q19": { 
-                " ": "q19", "\t": "q19", "\n": "q19", 
-                ",": "q15",  # Más elementos en el array
-                "]": "q20",  # Cierre del array
-            },
-            "q20": {  # Procesar cierre del array
-                " ": "q20", "\t": "q20", "\n": "q20",  
-                "}": "terminated",
-                ",": "q9",  # Procesar más pares clave-valor después del array
+            "q20": {  # Después del cierre del array
+                " ": "q20", "\t": "q20", "\n": "q20",
+                "}": "terminated",  # Fin del objeto JSON
+                ",": "q9",  # Más pares clave-valor
             },
         }
 
     def procesar_json(self, texto_json):
-        self.fila = 1
-        self.columna = 1
-        self.errores.clear()
         self.json_procesado = ""  
         self.estado_actual = 'q1'
         
         for caracter in texto_json:
-            if caracter == '\n': 
-                self.fila += 1
-                self.columna = 1
-            else:
-                self.columna += 1
-            
             try:
                 self.procesar_caracter(caracter)
-                self.json_procesado += caracter 
+                self.json_procesado += caracter
+                
+                # Si el estado es 'terminated', se ha encontrado un JSON completo
+                if self.estado_actual == 'terminated':  
+                    self.json_validos.append(self.json_procesado.strip())  # Almacenar el JSON válido
+                    self.json_procesado = ""  # Reiniciar para buscar otro JSON
+                    self.estado_actual = 'q1'  # Reiniciar el autómata para seguir buscando
             except ValueError as e:
-                print(e)
-                return False
-        
-        return self.estado_actual in self.estados_aceptacion
+                # Reiniciar el autómata y continuar buscando
+                self.json_procesado = ""  
+                self.estado_actual = 'q1'
+
+        return self.json_validos
 
     def procesar_caracter(self, caracter):
         if caracter in self.transition.get(self.estado_actual, {}):
             self.estado_actual = self.transition[self.estado_actual][caracter]
         else:
-            self.reportar_error(f"Carácter inesperado: '{caracter}'")
+            raise ValueError(f"Carácter inesperado: '{caracter}'")
 
-    def reportar_errores_csv(self, ruta_csv):
-        with open(ruta_csv, mode='w', newline='', encoding='utf-8') as archivo_csv:
-            escritor_csv = csv.DictWriter(archivo_csv, fieldnames=['error', 'fila', 'columna'])
-            escritor_csv.writeheader()
-            escritor_csv.writerows(self.errores)
-
-    def reportar_error(self, mensaje):
-        error = f"{mensaje} en la fila {self.fila}, columna {self.columna}"
-        print(f"JSON procesado hasta ahora:\n{self.json_procesado}")  
-        self.errores.append({'error': mensaje, 'fila': self.fila, 'columna': self.columna})
-        raise ValueError(error)
+    def obtener_json_validos(self):
+        return self.json_validos
