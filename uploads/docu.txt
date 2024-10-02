@@ -1,0 +1,39 @@
+¿Para qué sirve un archivo JSON?
+Un archivo JSON es un documento digital creado en este lenguaje que almacena información organizada, con el fin de hacer más simple su búsqueda y acceso. La ventaja de este formato es que permite obtener código legible para las personas con nombres y valores que funcionan como indicadores de la información que contienen.
+
+¿Dónde se utiliza JSON?
+Como hemos visto, los archivos JSON permiten obtener un código legible de almacenamiento y también son útiles para manipular la información de un programa a la hora de crear un software
+
+
+{"nombre":"juan",  
+ "hobbies":["leer"]}  
+
+Originalmente, JSON era utilizado únicamente bajo la notación basada en objetos de JavaScript. Actualmente, debido a su popularidad, muchos lenguajes de programación son compatibles con el formato JSON.
+
+Los archivos en este formato suelen tener la terminación .json y son especialmente provechosos para intercambiar o transferir información a lo largo de diferentes tipos de dispositivos digitales.
+
+El caso más común de uso de JSON está en el diseño de sitios web. Al crear páginas en línea queremos asegurarnos de que el sitio lea correctamente la información contenida en el servidor y que la muestre de forma óptima. Además, es deseable que el programador pueda modificar el código durante la marcha para corregir errores.
+
+Pero esta no es su única función. Por ejemplo, podemos emplear JSON para la creación de aplicaciones móviles y programas computacionales o incluso para la transferencia de documentos. Esta herramienta es tan versátil que podríamos asegurar que está prácticamente en todos lados.
+
+Ejemplos de archivos JSON
+Debido a que JSON es utilizado principalmente por desarrolladores de software, podría pensarse que estos archivos son muy complejos y tediosos. Pero en realidad son relativamente simples en comparación con otros métodos de administración de datos.
+
+Veamos algunos ejemplos de cómo luce el código de estos archivos para diferentes tipos de información.
+Strings
+En JSON los strings siempre deben ir entre comillas dobles y la key debe ser una secuencia de caracteres
+Numeros
+
+En el caso de los números, estos siempre deberán ser enteros o decimales:
+
+{"Edad":"30"}
+
+
+sjdfjdjsjdfa{"name" : "Carlos","edad":15}aaa
+{"name":[1,2]}aw{"boolean":false},,{"name":1}'lorem
+{"value": 12}sadadsadsadasdasdsasdsaa
+
+{
+"name" : "Carlos",
+"edad":15
+}

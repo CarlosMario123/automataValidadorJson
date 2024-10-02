@@ -1,0 +1,8 @@
+{
+
+    "Nombre":"Juan",
+    "edad":15,
+    "hobbies":["leer","jugar"],
+    "casado":false
+    
+} 
