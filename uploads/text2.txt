@@ -1,2 +1,7 @@
 sjdfjdjsjdfa{"name" : "Carlos","edad":15}aaa{"name":[1,2]}aw{"boolean":false},,{"name":1}'lorem
 {"value": 12}sadadsadsadasdasdsasdsaa
+
+{
+"name" : "Carlos",
+"edad":15
+}

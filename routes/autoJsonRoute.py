@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, request, current_app, flash, redirect, url_for, send_file
+from flask import Blueprint, render_template, request, current_app, flash, redirect, url_for, send_file,session
 import os
 import zipfile
 from io import BytesIO
 from models.automata_json import AutomataJSON  
 from utils.file_utils import allowed_file
+from utils.jsonEstruct import arrayToJsonFormated
 import time
 
 autoMataJson = Blueprint('autoMataJson', __name__, url_prefix="/autoMataJson")
@@ -13,7 +14,10 @@ autoMataJson = Blueprint('autoMataJson', __name__, url_prefix="/autoMataJson")
 def upload_form():
     # Verificar si se ha generado un archivo ZIP para descarga
     filename = request.args.get('filename', None)
-    return render_template("upload.html", filename=filename)
+    
+    jsons = session.get('jsons', [])
+    session.pop('jsons', None) 
+    return render_template("upload.html", filename=filename,jsons=jsons)
 
 
 @autoMataJson.route('/upload', methods=['POST'])
@@ -43,6 +47,7 @@ def upload_file():
 
             # Si no se encontraron JSON válidos
             if not json_validos:
+                json_validos = []
                 flash(f"El archivo {filename} no contiene ninguna cadena JSON válida.", 'error')
                 return redirect(url_for('autoMataJson.upload_form'))
 
@@ -63,7 +68,9 @@ def upload_file():
                     zipf.writestr(json_filename, json_valido)
 
             # Redirigir al formulario de subida con el nombre del archivo ZIP para mostrar el botón de descarga
-            return redirect(url_for('autoMataJson.upload_form', filename=output_filename))
+            
+            session['jsons'] = arrayToJsonFormated(json_validos)
+            return redirect(url_for('autoMataJson.upload_form',filename=output_filename))
 
         except Exception as e:
             flash(f"Error procesando el archivo: {str(e)}", 'error')
